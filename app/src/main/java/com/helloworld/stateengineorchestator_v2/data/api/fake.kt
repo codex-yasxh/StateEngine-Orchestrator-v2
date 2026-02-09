@@ -6,7 +6,7 @@ import kotlin.random.Random
 //designing fake APIs using suspend function
 
 suspend fun fetchProfile(): String {
-    delay(3000)
+    delay(2000)
     val successFetchProfile = Random.nextBoolean()
     if(successFetchProfile) return "Profile fetched successfully"
     else{

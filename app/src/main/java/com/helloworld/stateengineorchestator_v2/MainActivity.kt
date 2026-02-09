@@ -1,6 +1,7 @@
 package com.helloworld.stateengineorchestator_v2
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,8 +28,9 @@ import com.helloworld.stateengineorchestator_v2.ui.theme.StateEngineOrchestatorv
 import com.helloworld.stateengineorchestator_v2.viewModels.MyViewModel
 import com.helloworld.stateengineorchestator_v2.viewModels.ScreenIntent
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.TimeoutCancellationException
 
-
+private const val UI_TAG = "UIStateObserver"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +56,7 @@ fun MainScreen(viewModel: MyViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        when (uiState) {
+        when (val state = uiState) {
 
             is UIState.Idle -> {
                 Text("Idle state")
@@ -62,21 +64,28 @@ fun MainScreen(viewModel: MyViewModel) {
 
             is UIState.Loading -> {
                 CircularProgressIndicator()
-                Text("Loading...")
+                Text(
+                    "Loading… attempt ${state.attempt}/${state.maxAttempts}"
+                )
             }
 
             is UIState.Success -> {
-                val data = (uiState as UIState.Success).data
-                Text("Success:")
-                Text(data)
+
+                Text("Success")
             }
 
             is UIState.Error -> {
-                val error = (uiState as UIState.Error).reason
-                Text("Error:")
-                Text(error.message ?: "Unknown error")
+                // 🚫 NO spinner here
+                Text("Failed")
+
+                if (state.reason is TimeoutCancellationException) {
+                    Text("Request timed out after multiple attempts")
+                } else {
+                    Text(state.reason.message ?: "Unknown error")
+                }
             }
         }
+
 
         Box(
             modifier = Modifier.padding(16.dp),
@@ -84,6 +93,7 @@ fun MainScreen(viewModel: MyViewModel) {
         ){
             Button(
                 onClick = {
+                    Log.d(UI_TAG, "👉 User clicked Load / Retry")
                     viewModel.processIntent(ScreenIntent.Load)
                 }
             ) {
